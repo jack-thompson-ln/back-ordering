@@ -351,68 +351,96 @@ label {
 .filter-chip:hover { border-color: var(--blue); color: var(--blue); }
 .filter-chip.active { background: var(--blue); color: var(--white); border-color: var(--blue); }
 
-/* Order cards */
-.order-card {
+/* ── FLAT ORDERS TABLE ── */
+.orders-table-wrap {
   background: var(--white);
   border-radius: var(--r);
   border: 1.5px solid var(--border);
   box-shadow: var(--sh);
-  margin-bottom: 14px;
   overflow: hidden;
-  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
 }
-.order-card:hover { box-shadow: var(--sh-lg); transform: translateY(-1px); border-color: var(--border-dark); }
-
-.card-head {
-  padding: 16px 20px;
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 12px; flex-wrap: wrap;
-  border-bottom: 1.5px solid var(--border);
-}
-.card-meta { flex: 1; min-width: 0; }
-.card-ref  { font-size: 0.7rem; font-weight: 600; color: var(--text-3); letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 3px; }
-.card-name { font-size: 1rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-acct { font-size: 0.78rem; color: var(--text-2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
-.card-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
-.card-date  { font-size: 0.72rem; color: var(--text-3); }
-
-.card-body { padding: 0; overflow-x: auto; }
-.card-table { width: 100%; border-collapse: collapse; min-width: 560px; }
-.card-table th {
-  padding: 8px 14px;
-  text-align: left; font-size: 0.68rem; font-weight: 700;
-  color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;
-  background: #fafcff;
-  border-bottom: 1px solid var(--border);
-}
-.card-table td {
-  padding: 9px 14px;
+.orders-flat-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
   font-size: 0.83rem;
-  border-bottom: 1px solid #f0f5fb;
 }
-.card-table tr:last-child td { border-bottom: none; }
-.card-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
-.card-table .r { text-align: right; }
-.card-table .bold { font-weight: 600; }
-
-.card-foot {
-  padding: 11px 20px;
-  background: #fafcff;
-  border-top: 1.5px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; flex-wrap: wrap;
+.orders-flat-table thead tr {
+  background: linear-gradient(90deg, var(--dark) 0%, var(--blue) 100%);
 }
-.card-totals { font-size: 0.78rem; color: var(--text-2); display: flex; gap: 16px; flex-wrap: wrap; }
-.card-totals strong { color: var(--text); }
-.card-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.orders-flat-table th {
+  padding: 11px 13px;
+  text-align: left;
+  font-size: 0.68rem; font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.orders-flat-table th.r { text-align: right; }
 
+/* Row grouping — shade alternating orders */
+.orders-flat-table tbody tr { transition: background var(--transition); }
+.orders-flat-table tbody tr.group-even { background: var(--white); }
+.orders-flat-table tbody tr.group-odd  { background: #f8fafd; }
+.orders-flat-table tbody tr:hover      { background: #eef4fc !important; }
+
+.orders-flat-table td {
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.orders-flat-table tbody tr:last-child td { border-bottom: none; }
+
+/* Group separator — thicker border between different orders */
+.orders-flat-table tr.group-start td { border-top: 2px solid var(--border-dark); }
+.orders-flat-table tbody tr:first-child td { border-top: none; }
+
+/* Order info columns — shown only on first row of each order */
+.orders-flat-table td.order-info-cell { vertical-align: top; padding-top: 11px; }
+.orders-flat-table td.order-info-cell.hidden-cell { visibility: hidden; }
+
+.cell-acctname { font-weight: 700; color: var(--text); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.cell-acctnum  { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-2); margin-top: 1px; }
+.cell-ref      { font-size: 0.75rem; color: var(--text-2); white-space: nowrap; }
+.cell-date     { font-size: 0.72rem; color: var(--text-3); white-space: nowrap; }
+.cell-mono     { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.cell-r        { text-align: right; }
+.cell-actions  { white-space: nowrap; }
+
+/* Status badge in table */
 .status-select {
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: var(--r-xs); border: 1.5px solid var(--border);
-  font-family: 'Sora', sans-serif; font-size: 0.78rem; font-weight: 600;
+  font-family: 'Sora', sans-serif; font-size: 0.75rem; font-weight: 600;
   color: var(--text); background: var(--white); cursor: pointer;
 }
 .status-select:focus { outline: none; border-color: var(--blue); }
+
+/* Inline edit inputs inside table cells */
+.inline-edit-input {
+  border: 1.5px solid var(--blue) !important;
+  background: var(--white) !important;
+  border-radius: var(--r-xs);
+  padding: 4px 7px !important;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.82rem;
+  color: var(--text);
+  box-shadow: 0 0 0 2px rgba(0,75,142,.1);
+  width: 100%;
+}
+.inline-edit-input.mono-inp { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.inline-edit-input.r-inp    { text-align: right; }
+
+.btn-icon {
+  background: none; border: none; cursor: pointer;
+  padding: 5px; border-radius: var(--r-xs);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+  color: var(--text-2);
+}
+.btn-icon:hover { background: var(--accent); color: var(--blue); }
+.btn-icon.danger:hover { background: #fef0ef; color: #c0321e; }
+.btn-icon.save:hover   { background: #e2f5ec; color: #1a6e42; }
 
 /* Empty state */
 .empty-state {
@@ -546,7 +574,6 @@ label {
   .user-chip  { display: none; }
   .app-content { padding: 16px 12px 70px; }
   .form-body  { padding: 18px; }
-  .card-head, .card-foot { padding: 13px 14px; }
   .login-card { padding: 32px 22px; }
 }
 </style>
@@ -645,7 +672,7 @@ label {
           <svg class="search-icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
-          <input type="text" id="searchInput" placeholder="Search by account, name or reference...">
+          <input type="text" id="searchInput" placeholder="Search by account, name, reference or part...">
         </div>
         <div class="filter-row" id="filterRow">
           <div class="filter-chip active" data-f="ALL">All</div>
@@ -654,7 +681,9 @@ label {
           <div class="filter-chip" data-f="COMPLETED">Completed</div>
         </div>
       </div>
-      <div id="ordersContainer"></div>
+      <div class="orders-table-wrap">
+        <div id="ordersContainer"></div>
+      </div>
     </div>
 
     <!-- NEW ORDER VIEW -->
@@ -891,8 +920,6 @@ label {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
-  function fmt(n) { return '£' + Number(n).toFixed(2); }
-
   function fmtDate(iso) {
     return new Date(iso).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
   }
@@ -1031,6 +1058,8 @@ label {
      ============================================================= */
   function refreshOrders() {
     API.getOrders().then(function (orders) {
+      // Sort by submission date ascending (oldest first)
+      orders.sort(function (a, b) { return new Date(a.createdAt) - new Date(b.createdAt); });
       state.orders = orders;
       renderOrders();
     }).catch(function () { toast('Failed to load orders', 'error'); });
@@ -1040,10 +1069,18 @@ label {
     var search = ($('searchInput').value || '').toLowerCase();
     var filtered = state.orders.filter(function (o) {
       var mf = state.filter === 'ALL' || o.status === state.filter;
+      // For product-level filter we check if ANY product line matches status
+      if (state.filter !== 'ALL') {
+        mf = o.products.some(function(p){ return (p.status || o.status) === state.filter; });
+      }
       var ms = !search ||
         o.acctNum.toLowerCase().indexOf(search) >= 0 ||
         o.acctName.toLowerCase().indexOf(search) >= 0 ||
-        o.orderRef.toLowerCase().indexOf(search) >= 0;
+        o.orderRef.toLowerCase().indexOf(search) >= 0 ||
+        o.products.some(function(p){
+          return p.partNum.toLowerCase().indexOf(search) >= 0 ||
+                 p.partDesc.toLowerCase().indexOf(search) >= 0;
+        });
       return mf && ms;
     });
 
@@ -1060,64 +1097,87 @@ label {
       return;
     }
 
-    c.innerHTML = filtered.map(function (o) {
-      var sc = o.status === 'TO BE ORDERED' ? 'badge-tbo' : o.status === 'ORDERED' ? 'badge-ord' : 'badge-done';
-      var tCost  = o.products.reduce(function (s, p) { return s + p.qty * p.unitCost; }, 0);
-      var tPrice = o.products.reduce(function (s, p) { return s + p.qty * p.unitPrice; }, 0);
+    // Build flat table — one row per product line
+    var thead =
+      '<thead><tr>' +
+        '<th style="min-width:160px">Account Name</th>' +
+        '<th style="min-width:100px">Account No.</th>' +
+        '<th style="min-width:120px">Order Ref</th>' +
+        '<th style="min-width:80px">Date</th>' +
+        '<th style="min-width:110px">Part Number</th>' +
+        '<th style="min-width:200px">Description</th>' +
+        '<th class="r" style="min-width:60px">Qty</th>' +
+        '<th class="r" style="min-width:100px">Unit Cost (&#163;)</th>' +
+        '<th class="r" style="min-width:100px">Unit Price (&#163;)</th>' +
+        '<th style="min-width:160px">Status</th>' +
+        (state.editMode ? '<th style="min-width:100px">Actions</th>' : '') +
+      '</tr></thead>';
 
-      var rows = o.products.map(function (p) {
-        return '<tr>' +
-          '<td class="mono">' + esc(p.partNum) + '</td>' +
-          '<td>' + esc(p.partDesc) + '</td>' +
-          '<td class="r">' + p.qty + '</td>' +
-          '<td class="r mono">' + fmt(p.unitCost) + '</td>' +
-          '<td class="r mono">' + fmt(p.unitPrice) + '</td>' +
-          '<td class="r mono bold">' + fmt(p.qty * p.unitPrice) + '</td>' +
-        '</tr>';
-      }).join('');
+    var rows = '';
+    filtered.forEach(function (o, oi) {
+      var groupClass = (oi % 2 === 0) ? 'group-even' : 'group-odd';
+      o.products.forEach(function (p, pi) {
+        var isFirst = (pi === 0);
+        var rowClass = groupClass + (isFirst ? ' group-start' : '');
+        var pStatus = p.status || o.status; // per-product status falls back to order status
+        var sc = pStatus === 'TO BE ORDERED' ? 'badge-tbo' : pStatus === 'ORDERED' ? 'badge-ord' : 'badge-done';
 
-      var actions = state.editMode
-        ? '<select class="status-select" data-sid="' + o.id + '">' +
-            '<option' + (o.status === 'TO BE ORDERED' ? ' selected' : '') + '>TO BE ORDERED</option>' +
-            '<option' + (o.status === 'ORDERED'       ? ' selected' : '') + '>ORDERED</option>' +
-            '<option' + (o.status === 'COMPLETED'     ? ' selected' : '') + '>COMPLETED</option>' +
-          '</select>' +
-          '<button class="btn btn-danger btn-sm" data-did="' + o.id + '">' +
-            '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>' +
-            'Delete' +
-          '</button>'
-        : '<span style="font-size:.72rem;color:var(--text-3)">&#128274; Edit mode required</span>';
+        // Order-level cells — only shown on first product row of each order
+        var orderCells = isFirst
+          ? '<td class="order-info-cell">' +
+              '<div class="cell-acctname">' + esc(o.acctName) + '</div>' +
+            '</td>' +
+            '<td class="order-info-cell cell-ref">'  + esc(o.acctNum)  + '</td>' +
+            '<td class="order-info-cell cell-ref">'  + esc(o.orderRef) + '</td>' +
+            '<td class="order-info-cell cell-date">' + fmtDate(o.createdAt) + '</td>'
+          : '<td class="order-info-cell hidden-cell"></td>' +
+            '<td class="order-info-cell hidden-cell"></td>' +
+            '<td class="order-info-cell hidden-cell"></td>' +
+            '<td class="order-info-cell hidden-cell"></td>';
 
-      return '<div class="order-card">' +
-        '<div class="card-head">' +
-          '<div class="card-meta">' +
-            '<div class="card-ref">Order Ref: ' + esc(o.orderRef) + '</div>' +
-            '<div class="card-name">' + esc(o.acctName) + '</div>' +
-            '<div class="card-acct">' + esc(o.acctNum) + '</div>' +
-          '</div>' +
-          '<div class="card-right">' +
-            '<span class="badge ' + sc + '">' + o.status + '</span>' +
-            '<span class="card-date">' + fmtDate(o.createdAt) + '</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="card-body"><div class="overflow-wrap">' +
-          '<table class="card-table"><thead><tr>' +
-            '<th>Part No.</th><th>Description</th>' +
-            '<th class="r">Qty</th><th class="r">Unit Cost</th>' +
-            '<th class="r">Unit Price</th><th class="r">Line Total</th>' +
-          '</tr></thead><tbody>' + rows + '</tbody></table>' +
-        '</div></div>' +
-        '<div class="card-foot">' +
-          '<div class="card-totals">' +
-            '<span>' + o.products.length + ' line' + (o.products.length !== 1 ? 's' : '') + '</span>' +
-            '<span>Cost: <strong>' + fmt(tCost) + '</strong></span>' +
-            '<span>Price: <strong>' + fmt(tPrice) + '</strong></span>' +
-          '</div>' +
-          '<div class="card-actions">' + actions + '</div>' +
-        '</div>' +
+        // Per-product cells — view mode
+        var productCells =
+          '<td class="cell-mono" data-view-cell="partNum">'  + esc(p.partNum)  + '</td>' +
+          '<td data-view-cell="partDesc">'                   + esc(p.partDesc) + '</td>' +
+          '<td class="cell-r" data-view-cell="qty">'         + p.qty           + '</td>' +
+          '<td class="cell-r cell-mono" data-view-cell="unitCost">'  + fmtNum(p.unitCost)  + '</td>' +
+          '<td class="cell-r cell-mono" data-view-cell="unitPrice">' + fmtNum(p.unitPrice) + '</td>';
+
+        // Status cell — dropdown in edit mode, badge in view mode
+        var statusCell = state.editMode
+          ? '<td><select class="status-select" data-oid="' + o.id + '" data-pi="' + pi + '">' +
+              '<option' + (pStatus==='TO BE ORDERED'?' selected':'') + '>TO BE ORDERED</option>' +
+              '<option' + (pStatus==='ORDERED'?' selected':'') + '>ORDERED</option>' +
+              '<option' + (pStatus==='COMPLETED'?' selected':'') + '>COMPLETED</option>' +
+            '</select></td>'
+          : '<td><span class="badge ' + sc + '">' + pStatus + '</span></td>';
+
+        // Actions cell — edit mode only
+        var actionCell = state.editMode
+          ? '<td class="cell-actions">' +
+              '<button class="btn-icon" title="Edit this line" data-edit-oid="' + o.id + '" data-edit-pi="' + pi + '">' +
+                '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>' +
+              '</button>' +
+              '<button class="btn-icon danger" title="Delete this order" data-did="' + o.id + '">' +
+                '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>' +
+              '</button>' +
+            '</td>'
+          : '';
+
+        rows +=
+          '<tr class="' + rowClass + '" data-oid="' + o.id + '" data-pi="' + pi + '">' +
+            orderCells + productCells + statusCell + actionCell +
+          '</tr>';
+      });
+    });
+
+    c.innerHTML =
+      '<div style="overflow-x:auto">' +
+        '<table class="orders-flat-table">' + thead + '<tbody>' + rows + '</tbody></table>' +
       '</div>';
-    }).join('');
   }
+
+  function fmtNum(n) { return Number(n).toFixed(2); }
 
   /* =============================================================
      FILTER & SEARCH
@@ -1134,25 +1194,133 @@ label {
   $('searchInput').addEventListener('input', renderOrders);
 
   /* =============================================================
-     ORDER CARD INTERACTIONS (event delegation)
+     ORDER TABLE INTERACTIONS (event delegation)
      ============================================================= */
+
+  // Status change per product line
   $('ordersContainer').addEventListener('change', function (e) {
-    var sel = e.target.closest('[data-sid]');
-    if (!sel) return;
-    var id = sel.dataset.sid;
-    var newStatus = sel.value;
-    API.updateOrder(id, { status: newStatus }).then(function () {
+    var sel = e.target.closest('[data-oid][data-pi]');
+    if (!sel || sel.tagName !== 'SELECT') return;
+    var oid = sel.dataset.oid;
+    var pi  = parseInt(sel.dataset.pi, 10);
+    var o   = state.orders.find(function(x){ return x.id === oid; });
+    if (!o) return;
+    o.products[pi].status = sel.value;
+    API.updateOrder(oid, { products: o.products }).then(function () {
       refreshOrders();
-      toast('Status updated to ' + newStatus, 'success');
+      toast('Status updated to ' + sel.value, 'success');
     }).catch(function () { toast('Failed to update status', 'error'); });
   });
 
+  // Click delegation — edit line, delete order, save line
   $('ordersContainer').addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-did]');
-    if (!btn) return;
-    state.deleteTarget = btn.dataset.did;
-    $('deleteOverlay').classList.add('show');
+    // DELETE ORDER
+    var delBtn = e.target.closest('[data-did]');
+    if (delBtn) {
+      state.deleteTarget = delBtn.dataset.did;
+      $('deleteOverlay').classList.add('show');
+      return;
+    }
+
+    // EDIT PRODUCT LINE — swap cells to inputs
+    var editBtn = e.target.closest('[data-edit-oid]');
+    if (editBtn) {
+      var oid = editBtn.dataset.editOid;
+      var pi  = parseInt(editBtn.dataset.editPi, 10);
+      activateInlineEdit(oid, pi);
+      return;
+    }
+
+    // SAVE PRODUCT LINE
+    var saveBtn = e.target.closest('[data-save-oid]');
+    if (saveBtn) {
+      var oid = saveBtn.dataset.saveOid;
+      var pi  = parseInt(saveBtn.dataset.savePi, 10);
+      saveInlineEdit(oid, pi);
+      return;
+    }
+
+    // CANCEL EDIT
+    var cancelBtn = e.target.closest('[data-cancel-oid]');
+    if (cancelBtn) {
+      renderOrders(); // just re-render to discard
+      return;
+    }
   });
+
+  function activateInlineEdit(oid, pi) {
+    // Find the row
+    var row = $('ordersContainer').querySelector(
+      'tr[data-oid="' + oid + '"][data-pi="' + pi + '"]'
+    );
+    if (!row) return;
+    var o = state.orders.find(function(x){ return x.id === oid; });
+    if (!o) return;
+    var p = o.products[pi];
+
+    // Replace product cells (indices 4-8 in the row) with inputs
+    var cells = row.querySelectorAll('[data-view-cell]');
+    var fields = ['partNum','partDesc','qty','unitCost','unitPrice'];
+    cells.forEach(function(td, i) {
+      var inp = document.createElement('input');
+      inp.className = 'inline-edit-input' +
+        (fields[i] === 'partNum' ? ' mono-inp' : '') +
+        (fields[i] === 'qty' || fields[i] === 'unitCost' || fields[i] === 'unitPrice' ? ' r-inp' : '');
+      inp.type = (fields[i] === 'qty' || fields[i] === 'unitCost' || fields[i] === 'unitPrice') ? 'number' : 'text';
+      inp.value = p[fields[i]];
+      inp.dataset.field = fields[i];
+      if (inp.type === 'number') { inp.min = '0'; inp.step = fields[i] === 'qty' ? '1' : '0.01'; }
+      td.innerHTML = '';
+      td.appendChild(inp);
+    });
+
+    // Replace action buttons with save/cancel
+    var actionTd = row.cells[row.cells.length - 1];
+    actionTd.innerHTML =
+      '<button class="btn-icon save" title="Save changes" data-save-oid="' + oid + '" data-save-pi="' + pi + '">' +
+        '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>' +
+      '</button>' +
+      '<button class="btn-icon danger" title="Cancel" data-cancel-oid="' + oid + '">' +
+        '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M6 18L18 6M6 6l12 12"/></svg>' +
+      '</button>';
+
+    // Focus first input
+    var first = row.querySelector('.inline-edit-input');
+    if (first) first.focus();
+  }
+
+  function saveInlineEdit(oid, pi) {
+    var row = $('ordersContainer').querySelector(
+      'tr[data-oid="' + oid + '"][data-pi="' + pi + '"]'
+    );
+    if (!row) return;
+    var o = state.orders.find(function(x){ return x.id === oid; });
+    if (!o) return;
+
+    var inputs = row.querySelectorAll('.inline-edit-input');
+    var vals = {};
+    inputs.forEach(function(inp) { vals[inp.dataset.field] = inp.value.trim(); });
+
+    var partNum  = vals.partNum;
+    var partDesc = vals.partDesc;
+    var qty      = parseFloat(vals.qty);
+    var unitCost = parseFloat(vals.unitCost);
+    var unitPrice= parseFloat(vals.unitPrice);
+
+    if (!partNum || !partDesc || isNaN(qty) || qty < 1 || isNaN(unitCost) || isNaN(unitPrice)) {
+      toast('All fields are required and qty must be at least 1', 'error'); return;
+    }
+
+    o.products[pi] = Object.assign(o.products[pi], {
+      partNum: partNum, partDesc: partDesc,
+      qty: qty, unitCost: unitCost, unitPrice: unitPrice
+    });
+
+    API.updateOrder(oid, { products: o.products }).then(function () {
+      refreshOrders();
+      toast('Product line saved', 'success');
+    }).catch(function () { toast('Failed to save changes', 'error'); });
+  }
 
   /* =============================================================
      DELETE MODAL
