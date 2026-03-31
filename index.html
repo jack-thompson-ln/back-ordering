@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Back Order System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --blue:       #004b8e;
+  --blue-mid:   #003d75;
+  --dark:       #00205b;
+  --white:      #ffffff;
+  --off-white:  #f4f7fc;
+  --surface:    #ffffff;
+  --border:     #dce6f4;
+  --border-dark:#b8cce0;
+  --text:       #09183a;
+  --text-2:     #3d5a80;
+  --text-3:     #7a96b8;
+  --accent:     #e8f0fb;
+
+  --tbo-bg:     #e8f1fd; --tbo-fg:    #004b8e;
+  --ord-bg:     #fff6e0; --ord-fg:    #a05c00;
+  --done-bg:    #e2f5ec; --done-fg:   #1a6e42;
+
+  --r:    12px;
+  --r-sm: 8px;
+  --r-xs: 5px;
+  --sh:   0 2px 12px rgba(0,32,91,.08), 0 1px 3px rgba(0,32,91,.05);
+  --sh-lg:0 8px 40px rgba(0,32,91,.14), 0 2px 8px rgba(0,32,91,.06);
+  --sh-xl:0 20px 60px rgba(0,32,91,.18);
+  --transition: 0.18s cubic-bezier(.4,0,.2,1);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Sora', sans-serif;
+  background: var(--off-white);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   SHARED COMPONENTS
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 20px;
+  border-radius: var(--r-sm);
+  border: none; cursor: pointer;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.875rem; font-weight: 600;
+  transition: all var(--transition);
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary   { background: var(--blue);     color: var(--white); }
+.btn-primary:hover   { background: var(--dark); box-shadow: 0 4px 14px rgba(0,75,142,.35); transform: translateY(-1px); }
+.btn-secondary { background: var(--accent);   color: var(--blue);  border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: #dae8fb; border-color: var(--blue); }
+.btn-ghost     { background: transparent;     color: var(--blue);  border: 1.5px solid var(--blue); }
+.btn-ghost:hover     { background: var(--accent); }
+.btn-danger    { background: #fef0ef;         color: #c0321e;      border: 1.5px solid #f5c5c0; }
+.btn-danger:hover    { background: #fde0dd; }
+.btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+.btn-lg { padding: 13px 28px; font-size: 0.95rem; }
+
+input, select, textarea {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.9rem; color: var(--text);
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 13px;
+  width: 100%;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(0,75,142,.12);
+}
+input::placeholder, textarea::placeholder { color: var(--text-3); }
+
+label {
+  display: block;
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+.field { display: flex; flex-direction: column; }
+
+/* Toast */
+#toastWrap {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  padding: 11px 18px;
+  border-radius: var(--r-sm);
+  font-size: 0.83rem; font-weight: 600;
+  color: var(--white);
+  box-shadow: var(--sh-lg);
+  animation: toastIn .22s ease forwards;
+  pointer-events: all;
+  max-width: 320px;
+}
+.toast-info    { background: var(--dark); }
+.toast-success { background: #1a6e42; }
+.toast-error   { background: #c0321e; }
+@keyframes toastIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+/* Modal / Overlay */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,20,60,.55);
+  backdrop-filter: blur(4px);
+  z-index: 800;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--transition);
+}
+.overlay.show { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--white);
+  border-radius: var(--r);
+  padding: 36px 32px;
+  width: 100%; max-width: 400px;
+  box-shadow: var(--sh-xl);
+  transform: scale(.95) translateY(12px);
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1);
+  text-align: center;
+}
+.overlay.show .modal { transform: scale(1) translateY(0); }
+.modal-icon  { font-size: 2.4rem; margin-bottom: 10px; line-height: 1; }
+.modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.modal-sub   { font-size: 0.83rem; color: var(--text-2); margin-bottom: 24px; }
+.modal-btns  { display: flex; gap: 10px; margin-top: 8px; }
+.modal-btns .btn { flex: 1; justify-content: center; }
+
+/* Status badge */
+.badge {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.badge-tbo   { background: var(--tbo-bg); color: var(--tbo-fg); }
+.badge-ord   { background: var(--ord-bg); color: var(--ord-fg); }
+.badge-done  { background: var(--done-bg);color: var(--done-fg);}
+
+/* ============================================================
+   LOGIN SCREEN
+   ============================================================ */
+#loginScreen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, var(--dark) 0%, var(--blue) 60%, #0066bb 100%);
+  padding: 20px;
+  position: relative; overflow: hidden;
+}
+#loginScreen::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(255,255,255,.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(255,255,255,.04) 0%, transparent 50%);
+}
+/* Subtle grid pattern */
+#loginScreen::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.login-card {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,.97);
+  border-radius: 18px;
+  padding: 44px 40px;
+  width: 100%; max-width: 420px;
+  box-shadow: var(--sh-xl);
+  animation: cardIn .4s cubic-bezier(.34,1.2,.64,1) both;
+}
+@keyframes cardIn { from { opacity:0; transform:translateY(24px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+.login-logo {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+}
+.login-logo-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--blue), var(--dark));
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,75,142,.35);
+  flex-shrink: 0;
+}
+.login-logo-text { font-size: 1.1rem; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; line-height: 1.2; }
+.login-logo-text span { display: block; font-size: 0.72rem; font-weight: 500; color: var(--text-2); letter-spacing: 0.3px; }
+.login-heading { font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: -0.5px; margin-bottom: 4px; }
+.login-sub     { font-size: 0.83rem; color: var(--text-2); margin-bottom: 28px; }
+.login-fields  { display: flex; flex-direction: column; gap: 16px; margin-bottom: 22px; }
+.login-error   { display: none; background: #fef0ef; border: 1px solid #f5c5c0; color: #c0321e; border-radius: var(--r-xs); padding: 9px 13px; font-size: 0.82rem; font-weight: 500; margin-bottom: 16px; }
+.login-error.show { display: block; }
+.login-footer  { margin-top: 20px; text-align: center; font-size: 0.75rem; color: var(--text-3); }
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#appShell { display: none; flex-direction: column; min-height: 100vh; }
+#appShell.visible { display: flex; }
+
+/* Header */
+.app-header {
+  background: linear-gradient(90deg, var(--dark) 0%, var(--blue) 100%);
+  height: 60px; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 16px rgba(0,20,60,.2);
+  flex-shrink: 0;
+}
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--white); font-weight: 700; font-size: 1rem; letter-spacing: -0.3px;
+}
+.header-logo-icon {
+  width: 32px; height: 32px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.header-right { display: flex; align-items: center; gap: 10px; }
+.user-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 20px;
+  padding: 4px 12px 4px 6px;
+  color: var(--white); font-size: 0.78rem; font-weight: 600;
+}
+.user-avatar {
+  width: 22px; height: 22px;
+  background: rgba(255,255,255,.25);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 700;
+}
+.edit-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  color: var(--white); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.4px;
+  cursor: pointer; transition: all var(--transition);
+  user-select: none;
+}
+.edit-pill:hover { background: rgba(255,255,255,.2); }
+.edit-pill.active { background: #1a6e42; border-color: #27ae60; }
+.edit-pill-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.45); }
+.edit-pill.active .edit-pill-dot { background: #7dffb3; }
+.btn-logout {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  color: var(--white); padding: 5px 12px;
+  border-radius: var(--r-xs); font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; font-family: 'Sora', sans-serif;
+  transition: background var(--transition);
+}
+.btn-logout:hover { background: rgba(255,255,255,.2); }
+
+/* Navigation tabs */
+.app-nav {
+  background: var(--white);
+  display: flex; gap: 0;
+  border-bottom: 2px solid var(--border);
+  padding: 0 24px;
+  position: sticky; top: 60px; z-index: 190;
+  box-shadow: 0 1px 8px rgba(0,32,91,.06);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.app-nav::-webkit-scrollbar { display: none; }
+.nav-tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 18px;
+  font-size: 0.85rem; font-weight: 600;
+  color: var(--text-2); cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -2px;
+  transition: all var(--transition);
+  white-space: nowrap;
+  user-select: none;
+}
+.nav-tab:hover { color: var(--blue); }
+.nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.nav-badge {
+  background: var(--blue); color: var(--white);
+  border-radius: 20px; padding: 1px 8px;
+  font-size: 0.68rem; font-weight: 700;
+}
+
+/* Page container */
+.app-content { flex: 1; max-width: 1140px; margin: 0 auto; width: 100%; padding: 28px 20px 80px; }
+
+/* View pages */
+.view { display: none; }
+.view.active { display: block; animation: viewIn .2s ease both; }
+@keyframes viewIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+/* ============================================================
+   ORDERS VIEW
+   ============================================================ */
+.toolbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
+.search-wrap input { padding-left: 38px; }
+.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.filter-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.filter-chip {
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+  border: 1.5px solid var(--border);
+  cursor: pointer; transition: all var(--transition);
+  background: var(--white); color: var(--text-2);
+  user-select: none;
+}
+.filter-chip:hover { border-color: var(--blue); color: var(--blue); }
+.filter-chip.active { background: var(--blue); color: var(--white); border-color: var(--blue); }
+
+/* Order cards */
+.order-card {
+  background: var(--white);
+  border-radius: var(--r);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--sh);
+  margin-bottom: 14px;
+  overflow: hidden;
+  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+}
+.order-card:hover { box-shadow: var(--sh-lg); transform: translateY(-1px); border-color: var(--border-dark); }
+
+.card-head {
+  padding: 16px 20px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  border-bottom: 1.5px solid var(--border);
+}
+.card-meta { flex: 1; min-width: 0; }
+.card-ref  { font-size: 0.7rem; font-weight: 600; color: var(--text-3); letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 3px; }
+.card-name { font-size: 1rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-acct { font-size: 0.78rem; color: var(--text-2); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+.card-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+.card-date  { font-size: 0.72rem; color: var(--text-3); }
+
+.card-body { padding: 0; overflow-x: auto; }
+.card-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+.card-table th {
+  padding: 8px 14px;
+  text-align: left; font-size: 0.68rem; font-weight: 700;
+  color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;
+  background: #fafcff;
+  border-bottom: 1px solid var(--border);
+}
+.card-table td {
+  padding: 9px 14px;
+  font-size: 0.83rem;
+  border-bottom: 1px solid #f0f5fb;
+}
+.card-table tr:last-child td { border-bottom: none; }
+.card-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.card-table .r { text-align: right; }
+.card-table .bold { font-weight: 600; }
+
+.card-foot {
+  padding: 11px 20px;
+  background: #fafcff;
+  border-top: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+}
+.card-totals { font-size: 0.78rem; color: var(--text-2); display: flex; gap: 16px; flex-wrap: wrap; }
+.card-totals strong { color: var(--text); }
+.card-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.status-select {
+  padding: 6px 10px;
+  border-radius: var(--r-xs); border: 1.5px solid var(--border);
+  font-family: 'Sora', sans-serif; font-size: 0.78rem; font-weight: 600;
+  color: var(--text); background: var(--white); cursor: pointer;
+}
+.status-select:focus { outline: none; border-color: var(--blue); }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 72px 24px;
+  color: var(--text-2);
+}
+.empty-icon { font-size: 3rem; opacity: .4; margin-bottom: 14px; }
+.empty-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+.empty-sub { font-size: 0.84rem; color: var(--text-2); }
+
+/* ============================================================
+   NEW ORDER FORM
+   ============================================================ */
+.form-card {
+  background: var(--white);
+  border-radius: var(--r);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--sh);
+  overflow: hidden;
+}
+.form-header {
+  padding: 22px 28px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--dark) 100%);
+  color: var(--white);
+}
+.form-header-title { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.3px; }
+.form-header-sub   { font-size: 0.8rem; opacity: .7; margin-top: 3px; }
+.form-body { padding: 28px; }
+
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+.col-span-2 { grid-column: span 2; }
+@media (max-width: 640px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr; }
+  .col-span-2 { grid-column: span 1; }
+}
+
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 26px 0 18px;
+  font-size: 0.72rem; font-weight: 700; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Product table in form */
+.prod-table-wrap { border-radius: var(--r-sm); border: 1.5px solid var(--border); overflow: hidden; }
+.prod-table { width: 100%; border-collapse: collapse; min-width: 620px; }
+.prod-table th {
+  padding: 10px 10px;
+  background: #f4f7fc;
+  text-align: left; font-size: 0.68rem; font-weight: 700;
+  color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1.5px solid var(--border);
+}
+.prod-table td { padding: 5px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.prod-table tr:last-child td { border-bottom: none; }
+.prod-table td input {
+  border: 1.5px solid transparent;
+  background: transparent;
+  padding: 7px 9px;
+  border-radius: var(--r-xs);
+  font-size: 0.83rem;
+  width: 100%;
+}
+.prod-table td input:focus { background: var(--white); border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,75,142,.1); }
+.prod-table td input.mono-inp { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.prod-table td input.r-align  { text-align: right; }
+.prod-table .row-num { width: 36px; text-align: center; font-size: 0.72rem; color: var(--text-3); font-weight: 600; }
+.prod-table .col-action { width: 44px; }
+
+.btn-remove-row {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-3); padding: 6px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+  width: 32px; height: 32px;
+}
+.btn-remove-row:hover { color: #c0321e; background: #fef0ef; }
+
+.btn-add-line {
+  width: 100%; margin-top: 10px;
+  background: none; border: 1.5px dashed var(--border-dark);
+  padding: 9px; border-radius: var(--r-sm);
+  font-family: 'Sora', sans-serif; font-size: 0.83rem; font-weight: 600;
+  color: var(--text-2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all var(--transition);
+}
+.btn-add-line:hover { border-color: var(--blue); color: var(--blue); background: var(--accent); }
+
+.form-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+
+/* Overflow horizontal scroll for small screens */
+.overflow-wrap { overflow-x: auto; }
+
+/* ============================================================
+   PIN KEYPAD (shared)
+   ============================================================ */
+.pin-dots { display: flex; justify-content: center; gap: 12px; margin: 0 0 6px; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--white);
+  transition: all .15s;
+}
+.pin-dot.filled { background: var(--blue); border-color: var(--blue); transform: scale(1.1); }
+.pin-dot.shake  { animation: shake .35s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 60%{transform:translateX(5px)} }
+.pin-error { min-height: 20px; font-size: 0.78rem; color: #c0321e; font-weight: 500; margin: 8px 0 14px; }
+.keypad {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 9px;
+  margin-bottom: 18px;
+}
+.key {
+  padding: 13px; border-radius: var(--r-sm);
+  border: 1.5px solid var(--border); background: var(--white);
+  font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; font-weight: 600;
+  color: var(--text); cursor: pointer;
+  transition: all .15s;
+}
+.key:hover  { background: var(--accent); border-color: var(--blue); }
+.key:active { transform: scale(0.94); }
+.key-txt    { font-family: 'Sora', sans-serif; font-size: 0.75rem; color: var(--text-2); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 600px) {
+  .app-header { padding: 0 14px; }
+  .user-chip  { display: none; }
+  .app-content { padding: 16px 12px 70px; }
+  .form-body  { padding: 18px; }
+  .card-head, .card-foot { padding: 13px 14px; }
+  .login-card { padding: 32px 22px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.2">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      <div class="login-logo-text">
+        Back Order System
+        <span>Purchasing &amp; Operations</span>
+      </div>
+    </div>
+    <div class="login-heading">Welcome back</div>
+    <div class="login-sub">Sign in with your credentials to continue</div>
+    <div class="login-error" id="loginError">Incorrect username or password.</div>
+    <div class="login-fields">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Enter your username" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg" id="btnLogin" style="width:100%;justify-content:center;">
+      Sign In
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+    <div class="login-footer">Internal use only &mdash; authorised personnel only</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="appShell">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-logo">
+      <div class="header-logo-icon">
+        <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.2">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      Back Order System
+    </div>
+    <div class="header-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userLabel">User</span>
+      </div>
+      <div class="edit-pill" id="editPill">
+        <div class="edit-pill-dot"></div>
+        <span id="editPillText">VIEW ONLY</span>
+      </div>
+      <button class="btn-logout" id="btnLogout">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="app-nav">
+    <div class="nav-tab active" data-view="orders">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+      </svg>
+      Back Orders
+      <span class="nav-badge" id="orderBadge">0</span>
+    </div>
+    <div class="nav-tab" data-view="new">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+        <path d="M12 4v16m8-8H4"/>
+      </svg>
+      New Back Order
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="app-content">
+
+    <!-- ORDERS VIEW -->
+    <div class="view active" id="view-orders">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search by account, name or reference...">
+        </div>
+        <div class="filter-row" id="filterRow">
+          <div class="filter-chip active" data-f="ALL">All</div>
+          <div class="filter-chip" data-f="TO BE ORDERED">To Be Ordered</div>
+          <div class="filter-chip" data-f="ORDERED">Ordered</div>
+          <div class="filter-chip" data-f="COMPLETED">Completed</div>
+        </div>
+      </div>
+      <div id="ordersContainer"></div>
+    </div>
+
+    <!-- NEW ORDER VIEW -->
+    <div class="view" id="view-new">
+      <div class="form-card">
+        <div class="form-header">
+          <div class="form-header-title">New Back Order</div>
+          <div class="form-header-sub">Complete all fields and add product lines before submitting</div>
+        </div>
+        <div class="form-body">
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label>Customer Account Number</label>
+              <input type="text" id="fAcctNum" placeholder="e.g. CUST-001">
+            </div>
+            <div class="field">
+              <label>Customer Account Name</label>
+              <input type="text" id="fAcctName" placeholder="e.g. Acme Corporation Ltd">
+            </div>
+            <div class="field col-span-2">
+              <label>Customer Order Reference</label>
+              <input type="text" id="fOrderRef" placeholder="e.g. PO-2026-1234">
+            </div>
+          </div>
+
+          <div class="divider">Product Lines</div>
+
+          <div class="overflow-wrap">
+            <div class="prod-table-wrap">
+              <table class="prod-table">
+                <thead>
+                  <tr>
+                    <th class="row-num">#</th>
+                    <th style="min-width:110px">Part Number</th>
+                    <th style="min-width:200px">Part Description</th>
+                    <th style="min-width:72px;text-align:right">Qty</th>
+                    <th style="min-width:100px;text-align:right">Unit Cost (&#163;)</th>
+                    <th style="min-width:100px;text-align:right">Unit Price (&#163;)</th>
+                    <th class="col-action"></th>
+                  </tr>
+                </thead>
+                <tbody id="prodRows"></tbody>
+              </table>
+            </div>
+          </div>
+          <button class="btn-add-line" id="btnAddLine">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>
+            Add Product Line
+          </button>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" id="btnSubmitOrder">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>
+              Submit Back Order
+            </button>
+            <button class="btn btn-secondary" id="btnClearForm">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+              Clear Form
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+</div><!-- /appShell -->
+
+<!-- ============================================================
+     PIN MODAL
+     ============================================================ -->
+<div class="overlay" id="pinOverlay">
+  <div class="modal">
+    <div class="modal-icon">&#128272;</div>
+    <div class="modal-title">Edit Mode PIN</div>
+    <div class="modal-sub">Enter your 4-digit PIN to unlock editing</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+    <div class="keypad" id="keypad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key key-txt" data-k="clr">CLR</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key key-txt" data-k="del">&#9003;</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="btnPinCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DELETE CONFIRM MODAL
+     ============================================================ -->
+<div class="overlay" id="deleteOverlay">
+  <div class="modal">
+    <div class="modal-icon">&#128465;</div>
+    <div class="modal-title">Delete Back Order?</div>
+    <div class="modal-sub">This cannot be undone. The back order record will be permanently removed.</div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" id="btnDelCancel">Cancel</button>
+      <button class="btn btn-danger" id="btnDelConfirm" style="background:#c0321e;color:#fff;border-color:#c0321e">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toastWrap"></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* =============================================================
+     ██████╗  ██████╗ ███╗   ██╗███████╗██╗ ██████╗
+     ██╔════╝██╔═══██╗████╗  ██║██╔════╝██║██╔════╝
+     ██║     ██║   ██║██╔██╗ ██║█████╗  ██║██║  ███╗
+     ██║     ██║   ██║██║╚██╗██║██╔══╝  ██║██║   ██║
+     ╚██████╗╚██████╔╝██║ ╚████║██║     ██║╚██████╔╝
+      ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝     ╚═╝ ╚═════╝
+
+     !! EDIT THESE SECTIONS TO CONFIGURE YOUR APP !!
+     ============================================================= */
+
+  /**
+   * USERS
+   * Add, remove or change username/password pairs here.
+   * Passwords are stored in plain text — this is a lightweight
+   * access gate, not enterprise auth. For stronger security,
+   * connect a real backend / OAuth provider.
+   */
+  var USERS = {
+    'admin':      'backorder2026',
+    'purchasing': 'purchase99',
+    'warehouse':  'warehouse1'
+  };
+
+  /**
+   * EDIT MODE PIN
+   * Users must enter this PIN to unlock status changes & deletions.
+   */
+  var EDIT_PIN = '1234';
+
+  /**
+   * API LAYER
+   * ─────────────────────────────────────────────────────────────
+   * Replace the bodies of these four functions to connect your
+   * backend. They must all return Promises.
+   *
+   * Current implementation: localStorage (single-browser only).
+   * Swap for fetch('/api/orders', ...) calls when your backend
+   * is ready — the rest of the app does NOT need to change.
+   * ─────────────────────────────────────────────────────────────
+   */
+  var API = {
+    /** Fetch all orders. Returns Promise<Order[]> */
+    getOrders: function () {
+      return new Promise(function (resolve) {
+        try {
+          var raw = localStorage.getItem('bo_orders');
+          resolve(raw ? JSON.parse(raw) : []);
+        } catch (e) { resolve([]); }
+      });
+    },
+
+    /** Persist a new order. Returns Promise<Order> */
+    createOrder: function (order) {
+      return API.getOrders().then(function (orders) {
+        orders.unshift(order);
+        localStorage.setItem('bo_orders', JSON.stringify(orders));
+        return order;
+      });
+    },
+
+    /** Update an existing order by id. Returns Promise<Order> */
+    updateOrder: function (id, patch) {
+      return API.getOrders().then(function (orders) {
+        var idx = orders.findIndex(function (o) { return o.id === id; });
+        if (idx === -1) throw new Error('Order not found');
+        Object.assign(orders[idx], patch);
+        localStorage.setItem('bo_orders', JSON.stringify(orders));
+        return orders[idx];
+      });
+    },
+
+    /** Delete an order by id. Returns Promise<void> */
+    deleteOrder: function (id) {
+      return API.getOrders().then(function (orders) {
+        var filtered = orders.filter(function (o) { return o.id !== id; });
+        localStorage.setItem('bo_orders', JSON.stringify(filtered));
+      });
+    }
+  };
+
+  /* =============================================================
+     APP STATE
+     ============================================================= */
+  var state = {
+    user:         null,
+    editMode:     false,
+    filter:       'ALL',
+    orders:       [],
+    deleteTarget: null,
+    pinBuffer:    '',
+    rowCounter:   0
+  };
+
+  /* =============================================================
+     UTILITIES
+     ============================================================= */
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function fmt(n) { return '£' + Number(n).toFixed(2); }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  function toast(msg, type) {
+    type = type || 'info';
+    var el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3200);
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  /* =============================================================
+     LOGIN
+     ============================================================= */
+  function attemptLogin() {
+    var u = $('loginUser').value.trim();
+    var p = $('loginPass').value;
+    if (USERS[u] && USERS[u] === p) {
+      state.user = u;
+      $('loginError').classList.remove('show');
+      $('loginScreen').style.display = 'none';
+      $('appShell').classList.add('visible');
+      $('userLabel').textContent = u;
+      $('userAvatar').textContent = u.charAt(0).toUpperCase();
+      refreshOrders();
+    } else {
+      $('loginError').classList.add('show');
+      $('loginPass').value = '';
+      $('loginPass').focus();
+    }
+  }
+
+  $('btnLogin').addEventListener('click', attemptLogin);
+  $('loginPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') attemptLogin(); });
+  $('loginUser').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('loginPass').focus(); });
+
+  $('btnLogout').addEventListener('click', function () {
+    state.user = null; state.editMode = false;
+    $('appShell').classList.remove('visible');
+    $('loginScreen').style.display = '';
+    $('loginUser').value = ''; $('loginPass').value = '';
+    updateEditUI();
+  });
+
+  /* =============================================================
+     NAVIGATION
+     ============================================================= */
+  document.querySelector('.app-nav').addEventListener('click', function (e) {
+    var tab = e.target.closest('.nav-tab');
+    if (!tab) return;
+    var v = tab.dataset.view;
+    document.querySelectorAll('.nav-tab').forEach(function (t) { t.classList.remove('active'); });
+    document.querySelectorAll('.view').forEach(function (el) { el.classList.remove('active'); });
+    tab.classList.add('active');
+    $('view-' + v).classList.add('active');
+  });
+
+  /* =============================================================
+     EDIT MODE / PIN
+     ============================================================= */
+  function updateEditUI() {
+    var pill = $('editPill');
+    $('editPillText').textContent = state.editMode ? 'EDIT MODE' : 'VIEW ONLY';
+    if (state.editMode) { pill.classList.add('active'); } else { pill.classList.remove('active'); }
+  }
+
+  function updatePinDots() {
+    for (var i = 0; i < 4; i++) {
+      $('pd' + i).classList.toggle('filled', i < state.pinBuffer.length);
+    }
+  }
+
+  function checkPin() {
+    if (state.pinBuffer === EDIT_PIN) {
+      state.editMode = true;
+      updateEditUI();
+      closePinModal();
+      refreshOrders();
+      toast('Edit mode enabled', 'success');
+    } else {
+      $('pinError').textContent = 'Incorrect PIN — try again.';
+      state.pinBuffer = '';
+      updatePinDots();
+      // Shake dots
+      document.querySelectorAll('.pin-dot').forEach(function (d) {
+        d.classList.add('shake');
+        setTimeout(function () { d.classList.remove('shake'); }, 400);
+      });
+    }
+  }
+
+  function openPinModal() {
+    state.pinBuffer = '';
+    $('pinError').textContent = '';
+    updatePinDots();
+    $('pinOverlay').classList.add('show');
+  }
+
+  function closePinModal() {
+    $('pinOverlay').classList.remove('show');
+    state.pinBuffer = '';
+  }
+
+  $('editPill').addEventListener('click', function () {
+    if (state.editMode) {
+      state.editMode = false;
+      updateEditUI();
+      refreshOrders();
+      toast('Edit mode disabled');
+    } else {
+      openPinModal();
+    }
+  });
+
+  $('btnPinCancel').addEventListener('click', closePinModal);
+  $('pinOverlay').addEventListener('click', function (e) { if (e.target === this) closePinModal(); });
+
+  $('keypad').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-k]');
+    if (!btn) return;
+    var k = btn.dataset.k;
+    if      (k === 'del') { state.pinBuffer = state.pinBuffer.slice(0, -1); }
+    else if (k === 'clr') { state.pinBuffer = ''; }
+    else if (state.pinBuffer.length < 4) { state.pinBuffer += k; }
+    updatePinDots();
+    $('pinError').textContent = '';
+    if (state.pinBuffer.length === 4) { setTimeout(checkPin, 140); }
+  });
+
+  /* =============================================================
+     ORDERS — FETCH & RENDER
+     ============================================================= */
+  function refreshOrders() {
+    API.getOrders().then(function (orders) {
+      state.orders = orders;
+      renderOrders();
+    }).catch(function () { toast('Failed to load orders', 'error'); });
+  }
+
+  function renderOrders() {
+    var search = ($('searchInput').value || '').toLowerCase();
+    var filtered = state.orders.filter(function (o) {
+      var mf = state.filter === 'ALL' || o.status === state.filter;
+      var ms = !search ||
+        o.acctNum.toLowerCase().indexOf(search) >= 0 ||
+        o.acctName.toLowerCase().indexOf(search) >= 0 ||
+        o.orderRef.toLowerCase().indexOf(search) >= 0;
+      return mf && ms;
+    });
+
+    $('orderBadge').textContent = state.orders.length;
+    var c = $('ordersContainer');
+
+    if (filtered.length === 0) {
+      c.innerHTML =
+        '<div class="empty-state">' +
+        '<div class="empty-icon">&#128203;</div>' +
+        '<div class="empty-title">' + (state.orders.length === 0 ? 'No back orders yet' : 'No matching orders') + '</div>' +
+        '<div class="empty-sub">' + (state.orders.length === 0 ? 'Use the New Back Order tab to create one.' : 'Adjust your search or filter.') + '</div>' +
+        '</div>';
+      return;
+    }
+
+    c.innerHTML = filtered.map(function (o) {
+      var sc = o.status === 'TO BE ORDERED' ? 'badge-tbo' : o.status === 'ORDERED' ? 'badge-ord' : 'badge-done';
+      var tCost  = o.products.reduce(function (s, p) { return s + p.qty * p.unitCost; }, 0);
+      var tPrice = o.products.reduce(function (s, p) { return s + p.qty * p.unitPrice; }, 0);
+
+      var rows = o.products.map(function (p) {
+        return '<tr>' +
+          '<td class="mono">' + esc(p.partNum) + '</td>' +
+          '<td>' + esc(p.partDesc) + '</td>' +
+          '<td class="r">' + p.qty + '</td>' +
+          '<td class="r mono">' + fmt(p.unitCost) + '</td>' +
+          '<td class="r mono">' + fmt(p.unitPrice) + '</td>' +
+          '<td class="r mono bold">' + fmt(p.qty * p.unitPrice) + '</td>' +
+        '</tr>';
+      }).join('');
+
+      var actions = state.editMode
+        ? '<select class="status-select" data-sid="' + o.id + '">' +
+            '<option' + (o.status === 'TO BE ORDERED' ? ' selected' : '') + '>TO BE ORDERED</option>' +
+            '<option' + (o.status === 'ORDERED'       ? ' selected' : '') + '>ORDERED</option>' +
+            '<option' + (o.status === 'COMPLETED'     ? ' selected' : '') + '>COMPLETED</option>' +
+          '</select>' +
+          '<button class="btn btn-danger btn-sm" data-did="' + o.id + '">' +
+            '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>' +
+            'Delete' +
+          '</button>'
+        : '<span style="font-size:.72rem;color:var(--text-3)">&#128274; Edit mode required</span>';
+
+      return '<div class="order-card">' +
+        '<div class="card-head">' +
+          '<div class="card-meta">' +
+            '<div class="card-ref">Order Ref: ' + esc(o.orderRef) + '</div>' +
+            '<div class="card-name">' + esc(o.acctName) + '</div>' +
+            '<div class="card-acct">' + esc(o.acctNum) + '</div>' +
+          '</div>' +
+          '<div class="card-right">' +
+            '<span class="badge ' + sc + '">' + o.status + '</span>' +
+            '<span class="card-date">' + fmtDate(o.createdAt) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card-body"><div class="overflow-wrap">' +
+          '<table class="card-table"><thead><tr>' +
+            '<th>Part No.</th><th>Description</th>' +
+            '<th class="r">Qty</th><th class="r">Unit Cost</th>' +
+            '<th class="r">Unit Price</th><th class="r">Line Total</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        '</div></div>' +
+        '<div class="card-foot">' +
+          '<div class="card-totals">' +
+            '<span>' + o.products.length + ' line' + (o.products.length !== 1 ? 's' : '') + '</span>' +
+            '<span>Cost: <strong>' + fmt(tCost) + '</strong></span>' +
+            '<span>Price: <strong>' + fmt(tPrice) + '</strong></span>' +
+          '</div>' +
+          '<div class="card-actions">' + actions + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* =============================================================
+     FILTER & SEARCH
+     ============================================================= */
+  $('filterRow').addEventListener('click', function (e) {
+    var chip = e.target.closest('.filter-chip');
+    if (!chip) return;
+    state.filter = chip.dataset.f;
+    document.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
+    chip.classList.add('active');
+    renderOrders();
+  });
+
+  $('searchInput').addEventListener('input', renderOrders);
+
+  /* =============================================================
+     ORDER CARD INTERACTIONS (event delegation)
+     ============================================================= */
+  $('ordersContainer').addEventListener('change', function (e) {
+    var sel = e.target.closest('[data-sid]');
+    if (!sel) return;
+    var id = sel.dataset.sid;
+    var newStatus = sel.value;
+    API.updateOrder(id, { status: newStatus }).then(function () {
+      refreshOrders();
+      toast('Status updated to ' + newStatus, 'success');
+    }).catch(function () { toast('Failed to update status', 'error'); });
+  });
+
+  $('ordersContainer').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-did]');
+    if (!btn) return;
+    state.deleteTarget = btn.dataset.did;
+    $('deleteOverlay').classList.add('show');
+  });
+
+  /* =============================================================
+     DELETE MODAL
+     ============================================================= */
+  $('btnDelCancel').addEventListener('click', function () {
+    state.deleteTarget = null;
+    $('deleteOverlay').classList.remove('show');
+  });
+  $('deleteOverlay').addEventListener('click', function (e) {
+    if (e.target === this) { state.deleteTarget = null; this.classList.remove('show'); }
+  });
+  $('btnDelConfirm').addEventListener('click', function () {
+    var id = state.deleteTarget;
+    if (!id) return;
+    API.deleteOrder(id).then(function () {
+      state.deleteTarget = null;
+      $('deleteOverlay').classList.remove('show');
+      refreshOrders();
+      toast('Back order deleted', 'success');
+    }).catch(function () { toast('Failed to delete order', 'error'); });
+  });
+
+  /* =============================================================
+     NEW ORDER FORM
+     ============================================================= */
+  function addProductRow() {
+    state.rowCounter++;
+    var id = state.rowCounter;
+    var tbody = $('prodRows');
+    var num = tbody.children.length + 1;
+    var tr = document.createElement('tr');
+    tr.id = 'pr-' + id;
+    tr.dataset.rid = id;
+
+    // Row number cell
+    var numTd = document.createElement('td');
+    numTd.className = 'row-num';
+    numTd.textContent = num;
+    tr.appendChild(numTd);
+
+    // Input helper
+    function inp(type, ph, cls, style) {
+      var td = document.createElement('td');
+      var i = document.createElement('input');
+      i.type = type; i.placeholder = ph;
+      if (cls)   i.className = cls;
+      if (style) i.style.cssText = style;
+      if (type === 'number') { i.min = '0'; i.step = (ph.indexOf('.') >= 0) ? '0.01' : '1'; }
+      td.appendChild(i);
+      return td;
+    }
+
+    tr.appendChild(inp('text',   'PN-00000',            'mono-inp'));
+    tr.appendChild(inp('text',   'Product description...', ''));
+    tr.appendChild(inp('number', '0',    '', 'width:72px;text-align:right'));
+    tr.appendChild(inp('number', '0.00', '', 'width:96px;text-align:right'));
+    tr.appendChild(inp('number', '0.00', '', 'width:96px;text-align:right'));
+
+    var actTd = document.createElement('td');
+    actTd.className = 'col-action';
+    var rmBtn = document.createElement('button');
+    rmBtn.className = 'btn-remove-row';
+    rmBtn.dataset.rid = id;
+    rmBtn.title = 'Remove row';
+    rmBtn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M6 18L18 6M6 6l12 12"/></svg>';
+    actTd.appendChild(rmBtn);
+    tr.appendChild(actTd);
+
+    tbody.appendChild(tr);
+  }
+
+  function renumber() {
+    var rows = $('prodRows').children;
+    for (var i = 0; i < rows.length; i++) { rows[i].children[0].textContent = i + 1; }
+  }
+
+  $('btnAddLine').addEventListener('click', addProductRow);
+
+  $('prodRows').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-rid]');
+    if (!btn || !btn.classList.contains('btn-remove-row')) return;
+    var tbody = $('prodRows');
+    if (tbody.children.length === 1) { toast('At least one product line is required', 'error'); return; }
+    var row = document.getElementById('pr-' + btn.dataset.rid);
+    if (row) { row.parentNode.removeChild(row); renumber(); }
+  });
+
+  function clearForm() {
+    ['fAcctNum','fAcctName','fOrderRef'].forEach(function (id) { $(id).value = ''; });
+    $('prodRows').innerHTML = '';
+    state.rowCounter = 0;
+    addProductRow();
+  }
+
+  $('btnClearForm').addEventListener('click', clearForm);
+
+  $('btnSubmitOrder').addEventListener('click', function () {
+    var acctNum  = $('fAcctNum').value.trim();
+    var acctName = $('fAcctName').value.trim();
+    var orderRef = $('fOrderRef').value.trim();
+
+    if (!acctNum || !acctName || !orderRef) {
+      toast('Please complete all account fields', 'error'); return;
+    }
+
+    var rows = Array.from($('prodRows').children);
+    var products = [];
+    for (var i = 0; i < rows.length; i++) {
+      var inputs   = rows[i].querySelectorAll('input');
+      var partNum  = inputs[0].value.trim();
+      var partDesc = inputs[1].value.trim();
+      var qty      = parseFloat(inputs[2].value);
+      var unitCost = parseFloat(inputs[3].value);
+      var unitPrice= parseFloat(inputs[4].value);
+      if (!partNum || !partDesc || isNaN(qty) || qty < 1 || isNaN(unitCost) || isNaN(unitPrice)) {
+        toast('Complete all product fields in every row', 'error'); return;
+      }
+      products.push({ partNum:partNum, partDesc:partDesc, qty:qty, unitCost:unitCost, unitPrice:unitPrice });
+    }
+
+    var order = {
+      id:        uid(),
+      acctNum:   acctNum,
+      acctName:  acctName,
+      orderRef:  orderRef,
+      products:  products,
+      status:    'TO BE ORDERED',
+      createdBy: state.user,
+      createdAt: new Date().toISOString()
+    };
+
+    API.createOrder(order).then(function () {
+      clearForm();
+      // Switch to orders tab
+      document.querySelectorAll('.nav-tab').forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+      document.querySelector('[data-view="orders"]').classList.add('active');
+      $('view-orders').classList.add('active');
+      refreshOrders();
+      toast('Back order submitted successfully', 'success');
+    }).catch(function () { toast('Failed to submit order', 'error'); });
+  });
+
+  /* =============================================================
+     INIT
+     ============================================================= */
+  addProductRow();
+
+})();
+</script>
+</body>
+</html>
